@@ -1,0 +1,431 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3706CEFD-E013-41D7-8DFE-46EB50B232CA}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ESL_System</RootNamespace>
+    <AssemblyName>ESL_System</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Debug\ESL_System.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Aspose.Cells_201402">
+      <HintPath>Library\Aspose.Cells_201402.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Aspose.Words_201402">
+      <HintPath>Library\Aspose.Words_201402.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="DevComponents.DotNetBar2, Version=9.5.0.1, Culture=neutral, PublicKeyToken=7eb7c3a35b91de04, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\DevComponents.DotNetBar2.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="FISCA, Version=2.5.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\FISCA.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="FISCA.Authentication, Version=1.9.0.18, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\FISCA.Authentication.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="FISCA.Data, Version=1.0.0.3, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\FISCA.Data.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="FISCA.DSAClient, Version=1.0.1.16, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\FISCA.DSAClient.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="FISCA.DSAUtil, Version=3.9.0.10, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\FISCA.DSAUtil.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="FISCA.LogAgent, Version=1.0.0.6, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\FISCA.LogAgent.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="FISCA.Permission, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\FISCA.Permission.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="FISCA.Presentation">
+      <HintPath>Library\FISCA.Presentation.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="FISCA.UDT">
+      <HintPath>Library\FISCA.UDT.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Framework, Version=1.0.0.10, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\Framework.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="JHSchool, Version=1.0.3.7, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\JHSchool.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="JHSchool.Data, Version=2.0.0.2, Culture=neutral, processorArchitecture=MSIL">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="K12.Data, Version=2.0.0.8, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\K12.Data.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="K12.Presentation, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Library\K12.Presentation.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PSSchool.Evaluation">
+      <HintPath>Library\PSSchool.Evaluation.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CourseExtentControls\BasicInfoItem.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CourseExtentControls\BasicInfoItem.designer.cs">
+      <DependentUpon>BasicInfoItem.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DegreeMapper.cs" />
+    <Compile Include="Model\CourseInfo.cs" />
+    <Compile Include="Model\FormParam.cs" />
+    <Compile Include="Model\SemsSubjScoreInfo.cs" />
+    <Compile Include="Model\SemsTotalScoreInfos.cs" />
+    <Compile Include="Model\StudentScAttend.cs" />
+    <Compile Include="Model\SubjectGPAMapping.cs" />
+    <Compile Include="Model\SemsTotalScoreInfo.cs" />
+    <Compile Include="Service\DataService.cs" />
+    <Compile Include="StringComparer.cs" />
+    <Compile Include="UDT\ScoreGPAMapping.cs" />
+    <Compile Include="UDT\SubjectInfoForGAPLevel.cs" />
+    <Compile Include="WeeklyReportRecord.cs" />
+    <Compile Include="ESLCourseRecord.cs" />
+    <Compile Include="ESLScore\Assessment.cs" />
+    <Compile Include="CalculateTermExamScore.cs" />
+    <Compile Include="ESLScore\ESLAwardStudentRecord.cs" />
+    <Compile Include="ESLScore\SCETakeESLRecord.cs" />
+    <Compile Include="ESLScore\ESLTemplate.cs" />
+    <Compile Include="ESLScore\ESLCourse.cs" />
+    <Compile Include="ESLScore\ESLScore.cs" />
+    <Compile Include="ExportESLscore_New.cs" />
+    <Compile Include="ExportESLscore.cs" />
+    <Compile Include="Form\CloneConfigure.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\CloneConfigure.designer.cs">
+      <DependentUpon>CloneConfigure.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\ESLCourseScoreStatusForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\ESLCourseScoreStatusForm.designer.cs">
+      <DependentUpon>ESLCourseScoreStatusForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\ESLTransferStudentSelectForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\ESLTransferStudentSelectForm.Designer.cs">
+      <DependentUpon>ESLTransferStudentSelectForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\ESLTransferScoreInputForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\ESLTransferScoreInputForm.Designer.cs">
+      <DependentUpon>ESLTransferScoreInputForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\ESLScoreInputForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\ESLScoreInputForm.Designer.cs">
+      <DependentUpon>ESLScoreInputForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\NewConfigure.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\NewConfigure.designer.cs">
+      <DependentUpon>NewConfigure.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\PrintESLAwardProgressScoreReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\PrintESLAwardProgressScoreReportForm.Designer.cs">
+      <DependentUpon>PrintESLAwardProgressScoreReportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\PrintESLAwardTotalScoreReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\PrintESLAwardTotalScoreReportForm.Designer.cs">
+      <DependentUpon>PrintESLAwardTotalScoreReportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\PrintESLReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\PrintESLReportForm.Designer.cs">
+      <DependentUpon>PrintESLReportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\ESL_KcbsFinalReportFormNEW.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\ESL_KcbsFinalReportFormNEW.Designer.cs">
+      <DependentUpon>ESL_KcbsFinalReportFormNEW.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\CheckCalculateTermForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\CheckCalculateTermForm.Designer.cs">
+      <DependentUpon>CheckCalculateTermForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\ESL_TemplateSetupManager.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\ESL_TemplateSetupManager.Designer.cs">
+      <DependentUpon>ESL_TemplateSetupManager.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\InsertNewTemplateForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\InsertNewTemplateForm.Designer.cs">
+      <DependentUpon>InsertNewTemplateForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\PrintWeeklyReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\PrintWeeklyReportForm.Designer.cs">
+      <DependentUpon>PrintWeeklyReportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\PrintStudentESLReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\PrintStudentESLReportForm.Designer.cs">
+      <DependentUpon>PrintStudentESLReportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\ReportTemplateSettingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\ReportTemplateSettingForm.Designer.cs">
+      <DependentUpon>ReportTemplateSettingForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\ScoreMappingTable.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\ScoreMappingTable.Designer.cs">
+      <DependentUpon>ScoreMappingTable.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\TemplateReNameForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\TemplateReNameForm.Designer.cs">
+      <DependentUpon>TemplateReNameForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ESLScore\Indicators.cs" />
+    <Compile Include="Global.cs" />
+    <Compile Include="ImportHCScore.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="ESLScore\Subject.cs" />
+    <Compile Include="ESLScore\Term.cs" />
+    <Compile Include="UDT\UDT_WeeklyReportTemplate.cs" />
+    <Compile Include="UDT\UDT_ReportTemplate.cs" />
+    <Compile Include="Utility.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Library\Aspose.Cells_201402.dll" />
+    <Content Include="Library\Aspose.Cells_201402.xml" />
+    <Content Include="Library\Aspose.Words_201402.dll" />
+    <Content Include="Library\Aspose.Words_201402.xml" />
+    <Content Include="Library\Campus.Configuration.dll" />
+    <Content Include="Library\Campus.Configuration.pdb" />
+    <Content Include="Library\DevComponents.DotNetBar2.dll" />
+    <Content Include="Library\DevComponents.DotNetBar2.xml" />
+    <Content Include="Library\FISCA.Authentication.dll" />
+    <Content Include="Library\FISCA.Authentication.xml" />
+    <Content Include="Library\FISCA.Data.dll" />
+    <Content Include="Library\FISCA.Data.xml" />
+    <Content Include="Library\FISCA.dll" />
+    <Content Include="Library\FISCA.DSAClient.dll" />
+    <Content Include="Library\FISCA.DSAClient.xml" />
+    <Content Include="Library\FISCA.DSAUtil.dll" />
+    <Content Include="Library\FISCA.DSAUtil.pdb" />
+    <Content Include="Library\FISCA.DSAUtil.xml" />
+    <Content Include="Library\FISCA.LogAgent.dll" />
+    <Content Include="Library\FISCA.LogAgent.pdb" />
+    <Content Include="Library\FISCA.LogAgent.xml" />
+    <Content Include="Library\FISCA.pdb" />
+    <Content Include="Library\FISCA.Permission.dll" />
+    <Content Include="Library\FISCA.Permission.pdb" />
+    <Content Include="Library\FISCA.Presentation.dll" />
+    <Content Include="Library\FISCA.Presentation.pdb" />
+    <Content Include="Library\FISCA.Presentation.xml" />
+    <Content Include="Library\FISCA.UDT.dll" />
+    <Content Include="Library\FISCA.UDT.pdb" />
+    <Content Include="Library\FISCA.UDT.xml" />
+    <Content Include="Library\FISCA.xml" />
+    <Content Include="Library\Framework.dll" />
+    <Content Include="Library\Framework.pdb" />
+    <Content Include="Library\HsinChu.JHEvaluation.Data.dll" />
+    <Content Include="Library\HsinChu.JHEvaluation.Data.pdb" />
+    <Content Include="Library\JHSchool.Affair.dll" />
+    <Content Include="Library\JHSchool.Affair.pdb" />
+    <Content Include="Library\JHSchool.Data.dll" />
+    <Content Include="Library\JHSchool.Data.pdb" />
+    <Content Include="Library\JHSchool.Data.xml" />
+    <Content Include="Library\JHSchool.dll" />
+    <Content Include="Library\JHSchool.Evaluation.dll" />
+    <Content Include="Library\JHSchool.Evaluation.pdb" />
+    <Content Include="Library\JHSchool.pdb" />
+    <Content Include="Library\JHSchool.SF.dll" />
+    <Content Include="Library\JHSchool.SF.pdb" />
+    <Content Include="Library\K12.Data.dll" />
+    <Content Include="Library\K12.Data.pdb" />
+    <Content Include="Library\K12.Data.xml" />
+    <Content Include="Library\K12.Presentation.dll" />
+    <Content Include="Library\K12.Presentation.pdb" />
+    <Content Include="Library\K12.Presentation.xml" />
+    <Content Include="Library\SmartSchool.API.PlugIn.dll" />
+    <Content Include="Library\SmartSchool.API.PlugIn.pdb" />
+    <Content Include="Resource\admissions_zoom_64.png" />
+    <Content Include="Resource\Description_Example.xml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Resource\calc_64.png" />
+    <None Include="packages.config" />
+    <None Include="Resource\ESL課程班級取前N名%28樣板%29.xlsx" />
+    <None Include="Resource\WeeklyReport樣板.docx" />
+    <None Include="Resource\預設ESL等第對照表.xml" />
+    <None Include="Resource\meeting_refresh_64.png" />
+    <None Include="Resource\loading.gif" />
+    <None Include="Resource\協助新竹康橋匯入ESL成績Excel範例.xlsx" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="CourseExtentControls\BasicInfoItem.resx">
+      <DependentUpon>BasicInfoItem.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\CloneConfigure.resx">
+      <DependentUpon>CloneConfigure.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\ESLCourseScoreStatusForm.resx">
+      <DependentUpon>ESLCourseScoreStatusForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\ESLTransferStudentSelectForm.resx">
+      <DependentUpon>ESLTransferStudentSelectForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\ESLTransferScoreInputForm.resx">
+      <DependentUpon>ESLTransferScoreInputForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\ESLScoreInputForm.resx">
+      <DependentUpon>ESLScoreInputForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\NewConfigure.resx">
+      <DependentUpon>NewConfigure.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\PrintESLAwardProgressScoreReportForm.resx">
+      <DependentUpon>PrintESLAwardProgressScoreReportForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\PrintESLAwardTotalScoreReportForm.resx">
+      <DependentUpon>PrintESLAwardTotalScoreReportForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\PrintESLReportForm.resx">
+      <DependentUpon>PrintESLReportForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\ESL_KcbsFinalReportFormNEW.resx">
+      <DependentUpon>ESL_KcbsFinalReportFormNEW.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\CheckCalculateTermForm.resx">
+      <DependentUpon>CheckCalculateTermForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\ESL_TemplateSetupManager.resx">
+      <DependentUpon>ESL_TemplateSetupManager.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\InsertNewTemplateForm.resx">
+      <DependentUpon>InsertNewTemplateForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\PrintWeeklyReportForm.resx">
+      <DependentUpon>PrintWeeklyReportForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\PrintStudentESLReportForm.resx">
+      <DependentUpon>PrintStudentESLReportForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\ReportTemplateSettingForm.resx">
+      <DependentUpon>ReportTemplateSettingForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\ScoreMappingTable.resx">
+      <DependentUpon>ScoreMappingTable.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\TemplateReNameForm.resx">
+      <DependentUpon>TemplateReNameForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\FinalReport.docx" />
+    <None Include="Resource\FinalReport_MailMergeList.docx" />
+    <None Include="Resource\MidReport .docx" />
+    <None Include="Resource\MidReport_MailMergeList.docx" />
+    <None Include="Resource\SemesterReport .docx" />
+    <None Include="Resource\SemesterReport_MailMergeList.docx" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

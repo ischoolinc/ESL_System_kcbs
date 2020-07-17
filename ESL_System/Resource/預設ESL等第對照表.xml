@@ -1,0 +1,7 @@
+﻿<ScoreMappingList>
+	<ScoreMapping EngName="A+" Score="90"></ScoreMapping>
+	<ScoreMapping EngName="A" Score="80"></ScoreMapping>
+	<ScoreMapping EngName="B" Score="70"></ScoreMapping>
+	<ScoreMapping EngName="C" Score="60"></ScoreMapping>
+	<ScoreMapping EngName="D" Score=""></ScoreMapping>
+</ScoreMappingList>

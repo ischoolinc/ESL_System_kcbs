@@ -1,0 +1,1003 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using FISCA.Presentation.Controls;
+using FISCA.Data;
+using Aspose.Cells;
+using System.Xml.Linq;
+using System.IO;
+using FISCA.Presentation;
+
+namespace ESL_System
+{
+    public class ExportESLscore_New
+    {
+        // 大於多少人數
+        private int _moreThan;
+
+        // 大於多少人數 取幾人
+        private int _moreThanPeople;
+
+        // 大於多少人數
+        private int _lessThan;
+
+        // 小於多少人數 取幾人
+        private int _lessThanPeople;
+
+        // 使用者是否選擇 "課程總成績" (因為其顯示的 excel 介面不太一樣)
+        private bool _isSemesterCourseScore = false;
+
+
+        private List<string> _courseIDList;
+
+        private List<K12.Data.CourseRecord> _courseList;
+
+        private List<ESLCourseRecord> _eslCourseList;
+
+        private List<string> _refAssessmentSetupIDList;
+
+        private BackgroundWorker _worker;
+
+        // 目前學年(106、107、108)
+        private string school_year;
+
+        // 目前學期(1、2)
+        private string semester;
+
+        // 儲放學生基本資料的 dict ，結構: Ref_studentID,StudentRecord
+        private Dictionary<string, ESLAwardStudentRecord> _studentRecordDict = new Dictionary<string, ESLAwardStudentRecord>();
+
+        // 儲放課程 ESL term成績的dict ，相同ESL成績評分樣版的課程放在一起整理 其結構為 <assessmentSetupID <courseID,<ESLScore>>> 
+        private Dictionary<string, Dictionary<string, List<ESLScore>>> _courseTermScoreDict = new Dictionary<string, Dictionary<string, List<ESLScore>>>();
+
+        // 儲放課程 ESL assessment成績的dict ，相同ESL成績評分樣版的課程放在一起整理 其結構為 <assessmentSetupID <courseID,<ESLScore>>> 
+        private Dictionary<string, Dictionary<string, List<ESLScore>>> _courseAssessmentScoreDict = new Dictionary<string, Dictionary<string, List<ESLScore>>>();
+
+        // 儲放課程 ESL 總成績的dict ，相同ESL成績評分樣版的課程放在一起整理 其結構為 <assessmentSetupID <courseID,<ESLScore>>> 
+        private Dictionary<string, Dictionary<string, List<ESLScore>>> _courseScoreDict = new Dictionary<string, Dictionary<string, List<ESLScore>>>();
+
+        // 儲放課程 ESL 課程修課人數的dict 其結構為 <courseID,<>>
+        private Dictionary<string, List<K12.Data.SCAttendRecord>> _courseScattendDict = new Dictionary<string, List<K12.Data.SCAttendRecord>>();
+
+        // 儲放ESL 成績單 科目、比重設定 的dict 其結構為 <courseID,<key,value>>
+        private Dictionary<string, Dictionary<string, string>> _itemDict = new Dictionary<string, Dictionary<string, string>>();
+
+        // 儲放每一個評分樣版 對應的 設定結構
+        private Dictionary<string, List<Term>> _assessmentSetupDataTableDict = new Dictionary<string, List<Term>>();
+
+        // 評分樣版 id 對應 其樣板名稱
+        private Dictionary<string, string> _assessmentSetupIDNamePairDict = new Dictionary<string, string>();
+
+        // 修課課程id 對應的評分樣版 id 對照
+        private Dictionary<string, string> _courseIDPairDict = new Dictionary<string, string>();
+
+        // 紀錄成績 為 指標型indicator 的 key值 ， 作為對照 key 為 courseID_termName_subjectName_assessment_Name
+        private List<string> _indicatorList = new List<string>();
+
+        // 紀錄成績 為 評語型comment 的 key值
+        private List<string> _commentList = new List<string>();
+
+        // 使用者 選擇的 系統試別名稱
+        private string _examName;
+
+        // 使用者 選擇的 系統試別ID
+        private string _examID = "";
+
+
+        // 儲放每一個ESL 評分樣版  系統的ExamID 對應到 ESL Term 名稱， 格式 <ESL_TemplateID <ExamID,TermName>>
+        // 有了對照才可以 正確在所有ESL 成績中抓到  正確對應目前系統設定的 指定評量成績
+        private Dictionary<string, Dictionary<string, string>> _assessmentSetupExamTermDict = new Dictionary<string, Dictionary<string, string>>();
+
+        // 系統Exam 中文名稱 對應 Exam ID
+        Dictionary<string, string> ExamDict = new Dictionary<string, string>();
+
+
+        public ExportESLscore_New(List<string> courseIDList)
+        {
+            _courseIDList = courseIDList;
+
+            string courseIDs = string.Join(",", _courseIDList);
+
+            // 若使用者選取課程沒有 ESL 的樣板設定 則提醒
+            string query = @"
+SELECT 
+    course.ref_exam_template_id
+    ,course.id
+    ,course.course_name
+    ,exam_template.name
+    ,exam_template.description 
+FROM course 
+LEFT JOIN  exam_template ON course.ref_exam_template_id =exam_template.id  
+WHERE course.id IN( " + courseIDs + ")";
+
+            QueryHelper qh = new QueryHelper();
+            DataTable dt = qh.Select(query);
+            if (dt.Rows.Count > 0)
+            {
+                List<string> errorList = new List<string>();
+
+                foreach (DataRow dr in dt.Rows)
+                {
+                    if ("" + dr["description"] == "")
+                    {
+                        errorList.Add("所選取課程:「" + dr["course_name"] + "」，其並非使用ESL評分樣版，無法使用本功能。 ");
+                    }
+
+                    // 將選擇的課程 依照評分樣版 分類 建立
+                    if (!_courseTermScoreDict.ContainsKey("" + dr["ref_exam_template_id"]))
+                    {
+                        _courseTermScoreDict.Add("" + dr["ref_exam_template_id"], new Dictionary<string, List<ESLScore>>());
+
+                        _courseTermScoreDict["" + dr["ref_exam_template_id"]].Add("" + dr["id"], new List<ESLScore>());
+                    }
+                    else
+                    {
+                        _courseTermScoreDict["" + dr["ref_exam_template_id"]].Add("" + dr["id"], new List<ESLScore>());
+                    }
+
+                    // 將選擇的課程 依照評分樣版 分類 建立
+                    if (!_courseAssessmentScoreDict.ContainsKey("" + dr["ref_exam_template_id"]))
+                    {
+                        _courseAssessmentScoreDict.Add("" + dr["ref_exam_template_id"], new Dictionary<string, List<ESLScore>>());
+
+                        _courseAssessmentScoreDict["" + dr["ref_exam_template_id"]].Add("" + dr["id"], new List<ESLScore>());
+                    }
+                    else
+                    {
+                        _courseAssessmentScoreDict["" + dr["ref_exam_template_id"]].Add("" + dr["id"], new List<ESLScore>());
+                    }
+                }
+
+                if (errorList.Count > 0)
+                {
+                    string erroor = string.Join("\r\n", errorList);
+
+                    MsgBox.Show(erroor);
+                    return;
+                }
+            }
+        }
+
+
+        // 列印 ESL 報表
+        public void PrintReport()
+        {
+            // 走課程總成績的 處理方式
+            _isSemesterCourseScore = true;
+
+            MotherForm.RibbonBarItems["課程", "ESL課程"]["課程成績匯出"].Enable = false;
+
+            _worker = new BackgroundWorker();
+            _worker.DoWork += new DoWorkEventHandler(Worker_DoWork);
+            _worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(Worker_RunWorkerCompleted);
+            _worker.ProgressChanged += new ProgressChangedEventHandler(Worker_ProgressChanged);
+            _worker.WorkerReportsProgress = true;
+
+            _worker.RunWorkerAsync();
+
+        }
+
+
+        private void Worker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            _worker.ReportProgress(0, "開始列印...");
+
+
+            #region 取得目前 系統的 學年度 學期 
+            school_year = K12.Data.School.DefaultSchoolYear;
+            semester = K12.Data.School.DefaultSemester;
+            #endregion
+
+
+            #region 取得課程 設定樣板、 基本資料整理
+            _courseList = new List<K12.Data.CourseRecord>();
+
+            _eslCourseList = new List<ESLCourseRecord>();
+
+            _courseList = K12.Data.Course.SelectByIDs(_courseIDList);
+
+            _eslCourseList = ESLCourseRecord.ToESLCourseRecords(_courseList);
+
+            _refAssessmentSetupIDList = new List<string>();
+
+            foreach (K12.Data.CourseRecord courseRecord in _courseList)
+            {
+                if (!_refAssessmentSetupIDList.Contains("'" + courseRecord.RefAssessmentSetupID + "'"))
+                {
+                    _refAssessmentSetupIDList.Add("'" + courseRecord.RefAssessmentSetupID + "'");
+                }
+
+                if (!_courseIDPairDict.ContainsKey(courseRecord.ID))
+                {
+                    _courseIDPairDict.Add(courseRecord.ID, courseRecord.RefAssessmentSetupID);
+                }
+
+                if (!_assessmentSetupIDNamePairDict.ContainsKey(courseRecord.RefAssessmentSetupID))
+                {
+                    _assessmentSetupIDNamePairDict.Add(courseRecord.RefAssessmentSetupID, courseRecord.AssessmentSetup.Name);
+                }
+            }
+
+            string assessmentSetupIDs = string.Join(",", _refAssessmentSetupIDList);
+
+
+
+            #endregion
+
+
+            #region 建立課程成績 Dict、取得各課程的學生人數(sc_attend)
+
+            List<K12.Data.SCAttendRecord> scList = K12.Data.SCAttend.SelectByCourseIDs(_courseIDList);
+
+            List<string> studentIDList = new List<string>();
+
+
+            foreach (K12.Data.SCAttendRecord scr in scList)
+            {
+                if (scr.Student.Status != K12.Data.StudentRecord.StudentStatus.一般)
+                {
+                    continue;
+                }
+                studentIDList.Add(scr.Student.ID);
+
+                // 建立課程修課名單，以對照出修課人數 對照畫面設定 決定取幾名 ，
+                if (!_courseScattendDict.ContainsKey(scr.Course.ID))
+                {
+                    _courseScattendDict.Add(scr.Course.ID, new List<K12.Data.SCAttendRecord>());
+                    _courseScattendDict[scr.Course.ID].Add(scr);
+                }
+                else
+                {
+                    _courseScattendDict[scr.Course.ID].Add(scr);
+                }
+            }
+
+
+            #endregion
+
+            // 建立 解讀　description　XML
+            CreateFieldTemplate();
+
+            #region 取得、整理ESL成績
+            _worker.ReportProgress(20, "取得ESL課程成績");
+
+            List<String> _courseIDListBatch = new List<string>();
+
+            QueryHelper qh = new QueryHelper();
+            DataTable dt = new DataTable();
+
+            // 2019/4/09 穎驊優化， 原本的取法，可能會因為筆數過多 造成伺服器資源過載，在此處做分批處理優化(10筆課程一次查詢)
+            for (int i = 0; i < _courseIDList.Count; i++)
+            {
+                if (_courseIDListBatch.Count <= 9 && i + 1 != _courseIDList.Count)
+                {
+                    _courseIDListBatch.Add(_courseIDList[i]);
+                }
+                else
+                {
+                    _courseIDListBatch.Add(_courseIDList[i]);
+
+                    string course_ids = string.Join("','", _courseIDListBatch);
+
+                    string sql = @"
+SELECT 
+    course.ref_exam_template_id
+    ,course.course_name AS english_class
+    ,course.id AS course_id 
+    ,student.student_number AS student_number
+    ,student.name AS student_chinese_name
+    ,student.english_name AS student_english_name
+    ,student.gender AS gender
+    ,class.class_name AS home_room
+    ,student.ref_class_id AS ref_class_id
+    ,student.id AS student_id
+     ,teacher.teacher_name
+     ,sc_attend.id AS sc_attend_id
+    ,$esl.gradebook_assessment_score.ref_teacher_id
+    ,sc_attend.ref_course_id
+    ,sc_attend.ref_student_id
+    ,$esl.gradebook_assessment_score.term
+    ,$esl.gradebook_assessment_score.subject
+    ,$esl.gradebook_assessment_score.assessment
+    ,$esl.gradebook_assessment_score.custom_assessment
+    ,$esl.gradebook_assessment_score.value 
+FROM student 	
+    LEFT JOIN sc_attend ON sc_attend.ref_student_id =student.id 
+	LEFT JOIN $esl.gradebook_assessment_score   ON  $esl.gradebook_assessment_score.ref_sc_attend_id = sc_attend.id
+    LEFT JOIN course ON sc_attend.ref_course_id = course.id    
+    LEFT JOIN class ON student.ref_class_id = class.id
+    LEFT JOIN teacher ON $esl.gradebook_assessment_score.ref_teacher_id = teacher.id
+WHERE sc_attend.ref_course_id IN ('" + course_ids + @"')
+ORDER BY $esl.gradebook_assessment_score.last_update";
+                    ;
+
+                    _courseIDListBatch.Clear();
+
+                    try
+                    {
+                        DataTable dt_batch = new DataTable();
+                        dt_batch = qh.Select(sql);
+
+                        dt.Merge(dt_batch);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                }
+            }
+
+
+
+            foreach (DataRow row in dt.Rows)
+            {
+                string termWord = "" + row["term"];
+                string subjectWord = "" + row["subject"];
+                string assessmentWord = "" + row["assessment"];
+
+                // 課程ID
+                string course_id = "" + row["ref_course_id"];
+
+                // 評分樣版 ID
+                string assessmentSetupID = "" + row["ref_exam_template_id"];
+
+                string targetTerm = _assessmentSetupExamTermDict["" + row["ref_exam_template_id"]].ContainsKey(_examID) ? _assessmentSetupExamTermDict["" + row["ref_exam_template_id"]][_examID] : "";
+
+                // 有教師自訂的子項目成績就跳掉 不處理
+                if ("" + row["custom_assessment"] != "")
+                {
+                    continue;
+                }
+
+                // 選擇目標課程的 ESL 成績 其Term 與選擇對應試別 對不起來 也不處理
+                // 但如果 選擇 課程總成績 ， 則所有 成績都要紀錄
+                if (targetTerm != termWord && !_isSemesterCourseScore)
+                {
+                    continue;
+                }
+
+                //// 指標型成績
+                //if (_indicatorList.Contains("" + row["ref_course_id"] + "_" + termWord.Trim().Replace(' ', '_').Replace('"', '_') + "_" + subjectWord.Trim().Replace(' ', '_').Replace('"', '_') + "_" + assessmentWord.Trim().Replace(' ', '_').Replace('"', '_')))
+                //{
+                //    //獎項只排 分數型成績、指標不納入
+                //    continue;
+                //}
+                //// 評語型成績
+                //else if (_commentList.Contains("" + row["ref_course_id"] + "_" + termWord.Trim().Replace(' ', '_').Replace('"', '_') + "_" + subjectWord.Trim().Replace(' ', '_').Replace('"', '_') + "_" + assessmentWord.Trim().Replace(' ', '_').Replace('"', '_')))
+                //{
+                //    //獎項只排 分數型成績、評語不納入
+                //    continue;
+                //}
+
+                // 上列狀況排除 剩下的都是分數型成績
+
+                #region 分數整理
+                ESLScore eslScore = new ESLScore();
+
+                eslScore.RefStudentID = "" + row["student_id"];
+                eslScore.RefStudentName = "" + row["student_chinese_name"];
+                eslScore.Term = termWord;
+                eslScore.Subject = subjectWord;
+                eslScore.Assessment = assessmentWord;
+
+                if ("" + row["value"] != "")
+                {
+                    eslScore.Value = "" + row["value"];
+                }
+
+                // 項目都有，為assessment 成績
+                if (termWord != "" && "" + subjectWord != "" && "" + assessmentWord != "")
+                {
+                    _courseAssessmentScoreDict[assessmentSetupID][course_id].Add(eslScore);
+                }
+
+                // 沒有assessment，為subject 成績
+                if (termWord != "" && "" + subjectWord != "" && "" + assessmentWord == "")
+                {
+                    // 敘獎 沒有看為subject 成績，暫不處理
+                }
+                // 沒有assessment、subject，為term 成績
+                if (termWord != "" && "" + subjectWord == "" && "" + assessmentWord == "")
+                {
+                    _courseTermScoreDict[assessmentSetupID][course_id].Add(eslScore);
+                }
+                #endregion
+
+                #region 學生基本資料整理
+
+                if (!_studentRecordDict.ContainsKey("" + row["ref_student_id"]))
+                {
+                    ESLAwardStudentRecord studentRecord = new ESLAwardStudentRecord();
+
+                    // 學號 (Student Number)
+                    studentRecord.StudentNumber = "" + row["student_number"];
+
+                    // 英文姓名 (English Name)
+                    studentRecord.EnglishName = "" + row["student_english_name"];
+
+                    // 中文姓名 (Chinese Name)
+                    studentRecord.ChineseName = "" + row["student_chinese_name"];
+
+                    // 性別 (Gender)
+                    studentRecord.Gender = "" + row["gender"] != "" ? "" + row["gender"] == "1" ? "男" : "女" : "";
+
+                    // 原班級 (Home Room)                
+                    studentRecord.HomeRoom = "" + row["home_room"];
+
+                    // 以ref_student_id 當作Key值 加入 對照字典， 之後填資料可以使用
+                    _studentRecordDict.Add("" + row["ref_student_id"], studentRecord);
+                }
+
+                #endregion
+
+                // 穎驊注解，另外 在樣板中 還有 Level 、 Group ， 目前 2019/1/3 系統中沒有這兩個欄位，
+                // 目前預計是等 寒假，在補齊欄位
+
+            }
+            #endregion
+
+            _worker.ReportProgress(60, "排序中...");
+
+            #region 排序
+            // 每一個課程的  Term 成績List 排序 (學號)
+            foreach (string assessmentSetupID in _courseTermScoreDict.Keys)
+            {
+                foreach (string coursrID in _courseTermScoreDict[assessmentSetupID].Keys)
+                {
+
+                    try
+                    {
+                        _courseTermScoreDict[assessmentSetupID][coursrID].Sort((x, y) => { return _studentRecordDict[x.RefStudentID].StudentNumber.CompareTo(_studentRecordDict[y.RefStudentID].StudentNumber); });
+                    }
+                    catch
+                    {
+
+                    }
+                }
+            }
+
+            // 學期 課程成績排序  (學號)
+            foreach (string coursrID in _courseScattendDict.Keys)
+            {
+
+                try
+                {
+                    _courseScattendDict[coursrID].Sort((x, y) => { return _studentRecordDict[x.RefStudentID].StudentNumber.CompareTo(_studentRecordDict[y.RefStudentID].StudentNumber); });
+                }
+                catch
+                {
+
+                }
+            }
+            #endregion
+
+            _worker.ReportProgress(80, "填寫報表...");
+
+            // 取得 系統預設的樣板
+            Workbook wb = new Workbook(new MemoryStream(Properties.Resources.ESL課程班級取前N名_樣板_));
+
+            #region 填表
+
+            FillCourseScoreExcelColunm(wb);
+
+            #endregion
+
+            // 把當作樣板的 第一張 移掉
+            wb.Worksheets.RemoveAt(0);
+
+            e.Result = wb;
+
+            _worker.ReportProgress(100, "ESL 課程成績 列印完成。");
+        }
+
+
+        private void Worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+
+            MotherForm.RibbonBarItems["課程", "ESL課程"]["課程成績匯出"].Enable = true;
+
+            if (e.Error != null)
+            {
+                MsgBox.Show("ESL 課程成績 列印失敗!!，錯誤訊息:" + e.Error.Message);
+                FISCA.Presentation.MotherForm.SetStatusBarMessage(" ESL 課程成績產生失敗");
+                return;
+            }
+            else if (e.Cancelled)
+            {
+                //MsgBox.Show("");
+                return;
+            }
+            else
+            {
+                FISCA.Presentation.MotherForm.SetStatusBarMessage(" ESL 課程成績產生完成");
+            }
+
+
+            Workbook wb = (Workbook)e.Result;
+
+        
+
+
+            // 電子報表功能先暫時不製做
+            #region 電子報表
+            //// 檢查是否上傳電子報表
+            //if (chkUploadEPaper.Checked)
+            //{
+            //    List<Document> docList = new List<Document>();
+            //    foreach (Section ss in doc.Sections)
+            //    {
+            //        Document dc = new Document();
+            //        dc.Sections.Clear();
+            //        dc.Sections.Add(dc.ImportNode(ss, true));
+            //        docList.Add(dc);
+            //    }
+
+            //    Update_ePaper up = new Update_ePaper(docList, "超額比序項目積分證明單", PrefixStudent.系統編號);
+            //    if (up.ShowDialog() == System.Windows.Forms.DialogResult.Yes)
+            //    {
+            //        MsgBox.Show("電子報表已上傳!!");
+            //    }
+            //    else
+            //    {
+            //        MsgBox.Show("已取消!!");
+            //    }
+            //} 
+            #endregion
+
+            SaveFileDialog sd = new SaveFileDialog();
+            sd.Title = "另存新檔";
+            sd.FileName = "ESL課程成績匯出.xlsx";
+            sd.Filter = "Excel 檔案(*.xlsx)|*.xlsx|所有檔案 (*.*)|*.*";
+            if (sd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                try
+                {
+                    wb.Save(sd.FileName, SaveFormat.Xlsx);
+                    System.Diagnostics.Process.Start(sd.FileName);
+                }
+                catch
+                {
+                    MessageBox.Show("檔案儲存失敗");
+                }
+            }
+
+        }
+
+
+        private void Worker_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            FISCA.Presentation.MotherForm.SetStatusBarMessage("" + e.UserState, e.ProgressPercentage);
+        }
+
+
+
+        // 生成 系統Exam 與 ESL Term 成績的對照
+        private void CreateFieldTemplate()
+        {
+
+            #region  解讀　description　XML
+
+            // 取得ESL 描述 in description
+            DataTable dt;
+            QueryHelper qh = new QueryHelper();
+
+            string assessmentSetupIDs = string.Join(",", _refAssessmentSetupIDList);
+
+            string selQuery = "SELECT id,description FROM exam_template WHERE id IN (" + assessmentSetupIDs + ")";
+
+            dt = qh.Select(selQuery);
+
+            //整理目前的ESL 課程資料
+            if (dt.Rows.Count > 0)
+            {
+                foreach (DataRow dr in dt.Rows)
+                {
+                    List<Term> termList = new List<Term>();
+
+                    string xmlStr = "<root>" + dr["description"].ToString() + "</root>";
+                    XElement elmRoot = XElement.Parse(xmlStr);
+
+                    termList = TransferDescription(elmRoot);
+
+                    foreach (Term term in termList)
+                    {
+                        if (!_assessmentSetupExamTermDict.ContainsKey(dr["id"].ToString()))
+                        {
+                            _assessmentSetupExamTermDict.Add(dr["id"].ToString(), new Dictionary<string, string>());
+
+                            _assessmentSetupExamTermDict[dr["id"].ToString()].Add(term.Ref_exam_id, term.Name);
+                        }
+                        else
+                        {
+                            if (!_assessmentSetupExamTermDict.ContainsKey(term.Ref_exam_id))
+                            {
+                                _assessmentSetupExamTermDict[dr["id"].ToString()].Add(term.Ref_exam_id, term.Name);
+                            }
+                        }
+                    }
+
+
+                    GetAssessmentSetup(termList, _courseList.FindAll(x => x.AssessmentSetup.ID == "" + dr["id"]));
+
+                    if (!_assessmentSetupDataTableDict.ContainsKey("" + dr["id"]))
+                    {
+                        _assessmentSetupDataTableDict.Add("" + dr["id"], termList);
+                    }
+
+                }
+            }
+
+
+            #endregion
+
+
+        }
+
+
+        private List<Term> TransferDescription(XElement elmRoot)
+        {
+            List<Term> tlist = new List<Term>();
+
+            //解析讀下來的 descriptiony 資料，打包成物件群 
+            if (elmRoot != null)
+            {
+                if (elmRoot.Element("ESLTemplate") != null)
+                {
+                    foreach (XElement ele_term in elmRoot.Element("ESLTemplate").Elements("Term"))
+                    {
+                        Term t = new Term();
+
+                        t.Name = ele_term.Attribute("Name").Value;
+                        t.Weight = ele_term.Attribute("Weight").Value;
+                        t.InputStartTime = ele_term.Attribute("InputStartTime").Value;
+                        t.InputEndTime = ele_term.Attribute("InputEndTime").Value;
+
+                        t.Ref_exam_id = ele_term.Attribute("Ref_exam_id") != null ? ele_term.Attribute("Ref_exam_id").Value : ""; // 2018/09/26 穎驊新增，因應要將 ESL 評量導入 成績系統，恩正說，在此加入評量對照
+
+                        t.SubjectList = new List<Subject>();
+
+                        foreach (XElement ele_subject in ele_term.Elements("Subject"))
+                        {
+                            Subject s = new Subject();
+
+                            s.Name = ele_subject.Attribute("Name").Value;
+                            s.Weight = ele_subject.Attribute("Weight").Value;
+
+                            s.AssessmentList = new List<Assessment>();
+
+                            foreach (XElement ele_assessment in ele_subject.Elements("Assessment"))
+                            {
+                                Assessment a = new Assessment();
+
+                                a.Name = ele_assessment.Attribute("Name").Value;
+                                a.Weight = ele_assessment.Attribute("Weight").Value;
+                                a.TeacherSequence = ele_assessment.Attribute("TeacherSequence").Value;
+                                a.Type = ele_assessment.Attribute("Type").Value;
+                                a.AllowCustomAssessment = ele_assessment.Attribute("AllowCustomAssessment").Value;
+
+                                if (a.Type == "Comment") // 假如是 評語類別，多讀一項 輸入限制屬性
+                                {
+                                    a.InputLimit = ele_assessment.Attribute("InputLimit").Value;
+                                }
+
+                                a.IndicatorsList = new List<Indicators>();
+
+                                if (ele_assessment.Element("Indicators") != null)
+                                {
+
+                                    foreach (XElement ele_Indicator in ele_assessment.Element("Indicators").Elements("Indicator"))
+                                    {
+                                        Indicators i = new Indicators();
+
+                                        i.Name = ele_Indicator.Attribute("Name").Value;
+                                        i.Description = ele_Indicator.Attribute("Description").Value;
+
+                                        a.IndicatorsList.Add(i);
+                                    }
+                                }
+                                s.AssessmentList.Add(a);
+                            }
+                            t.SubjectList.Add(s);
+                        }
+
+                        tlist.Add(t); // 整理成大包的termList 後面用此來拚功能變數總表
+                    }
+                }
+            }
+
+
+            return tlist;
+
+        }
+
+
+        private void GetAssessmentSetup(List<Term> termList, List<K12.Data.CourseRecord> couseList)
+        {
+
+            foreach (K12.Data.CourseRecord course in couseList)
+            {
+                foreach (Term term in termList)
+                {
+
+                    foreach (Subject subject in term.SubjectList)
+                    {
+                        foreach (Assessment assessment in subject.AssessmentList)
+                        {
+                            if (assessment.Type == "Score") //分數型成績 才增加
+                            {
+
+                            }
+                            if (assessment.Type == "Indicator") // 檢查看有沒有　　Indicator　，有的話另外存List 做對照
+                            {
+                                string key = course.ID + "_" + term.Name.Trim().Replace(' ', '_').Replace('"', '_') + "_" + subject.Name.Trim().Replace(' ', '_').Replace('"', '_') + "_" + assessment.Name.Trim().Replace(' ', '_').Replace('"', '_');
+
+                                // 作為對照 key 為 courseID_termName_subjectName_assessment_Name
+                                if (!_indicatorList.Contains(key))
+                                {
+                                    _indicatorList.Add(key);
+                                }
+                            }
+
+                            if (assessment.Type == "Comment") // 檢查看有沒有　　Comment　，有的話另外存List 做對照
+                            {
+                                string key = course.ID + "_" + term.Name.Trim().Replace(' ', '_').Replace('"', '_') + "_" + subject.Name.Trim().Replace(' ', '_').Replace('"', '_') + "_" + assessment.Name.Trim().Replace(' ', '_').Replace('"', '_');
+
+                                // 作為對照 key 為 courseID_termName_subjectName_assessment_Name
+                                if (!_commentList.Contains(key))
+                                {
+                                    _commentList.Add(key);
+                                }
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+
+
+        // 填寫 課程成績EXCEL
+        private void FillCourseScoreExcelColunm(Workbook wb)
+        {
+            int wscount = 1;
+
+            // 一種ESL樣板 開一個 Worksheet
+            foreach (string assessmentSetupID in _courseTermScoreDict.Keys)
+            {
+                Worksheet ws_total = wb.Worksheets[wb.Worksheets.Add()];
+
+                // 複製樣板
+                ws_total.Copy(wb.Worksheets["樣板一"]);
+
+                // 一種樣板 一個sheet 名稱
+                string wsName = wscount + ".ESL樣板_" + _assessmentSetupIDNamePairDict[assessmentSetupID] + "_課程";
+
+                wscount++;
+
+                // excel sheet Name 最多只能 31 個字
+                wsName = wsName.Length > 26 ? wsName.Substring(0, 22) + "..." : wsName;
+
+                ws_total.Name = wsName + "(總表)";
+
+                #region 填表頭
+                // 填表頭 
+                // 標題
+                ws_total.Cells["H1"].Value = school_year + "學年度 第" + semester + "學期 學生成績一覽表";
+
+                // 列印時間
+                ws_total.Cells["L1"].Value = "列印日期:" + DateTime.Now.Date.ToShortDateString();
+                #endregion
+
+                // 把範例樣板的成績結構刪除
+                ws_total.Cells.ClearRange(1, 12, 2, 19);
+                ws_total.Cells.ClearRange(2, 0, 2, 19);
+
+                // 最後 term 的位置
+                int termCol = 0;
+
+                // 最後 semesterScore 的位置
+                int semesterScoreCol = 0;
+
+                // 本樣板中有敘獎的學生人數
+                int totalAwardsCount = 0;
+
+
+                int col = 11;
+
+                // 填入每一個 樣板的 成績結構
+                foreach (Term term in _assessmentSetupDataTableDict[assessmentSetupID])
+                {
+                    foreach (Subject subject in term.SubjectList)
+                    {
+                        foreach (Assessment assessment in subject.AssessmentList)
+                        {
+
+                            Cell cell = ws_total.Cells[1, col];
+                            cell.Copy(wb.Worksheets["樣板一"].Cells["M2"]);
+
+                            cell.Value = "(" + subject.Name + ")\n" + assessment.Name;
+
+                            col++;
+                        }
+                    }
+
+                    // 最後補上 term
+                    Cell cell_term = ws_total.Cells[1, col];
+                    cell_term.Copy(wb.Worksheets["樣板一"].Cells["M2"]);
+
+                    cell_term.Value = term.Name;
+
+                    termCol = col;
+
+                    col++;
+                }
+
+                semesterScoreCol = termCol + 1;
+
+                // 最後補上 semesterScore
+                Cell cell_semesterScore = ws_total.Cells[1, col];
+                cell_semesterScore.Copy(wb.Worksheets["樣板一"].Cells["M2"]);
+
+                cell_semesterScore.Value = "Semester Score";
+
+                totalAwardsCount = 0;
+
+                // 依據 表頭的名稱 填入分數 (總表)
+                foreach (string courseID in _courseTermScoreDict[assessmentSetupID].Keys)
+                {
+                    // 取幾名
+                    int rankedNumber = 0;
+
+                    // 總表 取全部學生
+                    rankedNumber = _courseScattendDict[courseID].Count;
+
+
+                    // 依照設定看要取幾名
+                    for (int i = 0; i < rankedNumber; i++)
+                    {
+                        ESLCourseRecord courseRecord = new ESLCourseRecord();
+                        courseRecord = _eslCourseList.First(x => x.ESLID == courseID);
+
+                        // 學生 系統 ID 
+                        string ref_studentID;
+
+
+                        // 分數
+                        if (_courseScattendDict[courseID].Count >= i + 1)
+                        {
+                            ref_studentID = _courseScattendDict[courseID][i].RefStudentID;
+
+                            if (!_studentRecordDict.ContainsKey(ref_studentID))
+                            {
+                                continue;
+                            }
+
+                            // 自樣板 把資料第一Row 的格式都Copy
+                            ws_total.Cells.CopyRows(wb.Worksheets["樣板一"].Cells, 2, totalAwardsCount + 2, 1);
+
+                            Cell cell = ws_total.Cells[totalAwardsCount + 2, semesterScoreCol];
+                            //cell.Copy(wb.Worksheets["樣板一"].Cells["T2"]);
+                            // 先清空值， 預設是沒有分數
+                            cell.Value = "N/A";
+
+                            if (_courseScattendDict[courseID][i].Score != null)
+                            {
+                                cell.Value = _courseScattendDict[courseID][i].Score;
+                            }
+
+
+                            // 初始欄位置
+                            int initialCol = 11;
+
+                            // 填入每一個 樣板的 成績
+                            foreach (Term term in _assessmentSetupDataTableDict[assessmentSetupID])
+                            {
+                                string termName = term.Name;
+
+                                int assessmentTotal = 0;
+
+                                foreach (Subject subject in term.SubjectList)
+                                {
+                                    foreach (Assessment assessment in subject.AssessmentList)
+                                    {
+                                        assessmentTotal++;
+                                    }
+                                }
+
+                                // 填 assesssment 成績
+                                for (int assesssmentCol = initialCol; assesssmentCol < initialCol + assessmentTotal; assesssmentCol++)
+                                {
+                                    string subjectAssesssmentName = "" + ws_total.Cells[1, assesssmentCol].Value;
+
+                                    Cell assesssmentCell = ws_total.Cells[totalAwardsCount + 2, assesssmentCol];
+
+                                    assesssmentCell.Value = "N/A";
+
+                                    foreach (ESLScore eslScore in _courseAssessmentScoreDict[assessmentSetupID][courseID])
+                                    {
+                                        string key = "(" + eslScore.Subject + ")\n" + eslScore.Assessment;
+                                        if (eslScore.RefStudentID == ref_studentID && eslScore.Term == termName && key == subjectAssesssmentName)
+                                        {
+                                            assesssmentCell.Value = eslScore.Value;
+                                        }
+                                    }
+                                }
+
+                                // 填 term 成績
+                                Cell termCell = ws_total.Cells[totalAwardsCount + 2, initialCol + assessmentTotal];
+
+                                termCell.Value = "N/A";
+
+                                foreach (ESLScore eslScore in _courseTermScoreDict[assessmentSetupID][courseID])
+                                {
+                                    if (eslScore.RefStudentID == ref_studentID && eslScore.Term == termName)
+                                    {
+                                        termCell.Value = eslScore.Value;
+                                    }
+                                }
+
+                                initialCol = initialCol + assessmentTotal + 1;
+                            }
+
+
+                        }
+                        else
+                        {
+                            // 人數 不足， 跳離迴圈
+                            break;
+                        }
+
+                        // 學號 (Student Number)
+                        ws_total.Cells[totalAwardsCount + 2, 0].Value = _studentRecordDict.ContainsKey(ref_studentID) ? _studentRecordDict[ref_studentID].StudentNumber : "";
+
+                        // 英文姓名 (English Name)
+                        ws_total.Cells[totalAwardsCount + 2, 1].Value = _studentRecordDict.ContainsKey(ref_studentID) ? _studentRecordDict[ref_studentID].EnglishName : "";
+
+                        // 中文姓名 (Chinese Name)
+                        ws_total.Cells[totalAwardsCount + 2, 2].Value = _studentRecordDict.ContainsKey(ref_studentID) ? _studentRecordDict[ref_studentID].ChineseName : "";
+
+                        // 性別 (Gender)
+                        ws_total.Cells[totalAwardsCount + 2, 3].Value = _studentRecordDict.ContainsKey(ref_studentID) ? _studentRecordDict[ref_studentID].Gender : "";
+
+                        // 原班級 (Home Room)  
+                        ws_total.Cells[totalAwardsCount + 2, 4].Value = _studentRecordDict.ContainsKey(ref_studentID) ? _studentRecordDict[ref_studentID].HomeRoom : "";
+
+                        // 課程難度
+                        ws_total.Cells[totalAwardsCount + 2, 5].Value = courseRecord.ESLDifficulty;
+
+                        // 課程名稱
+                        ws_total.Cells[totalAwardsCount + 2, 7].Value = courseRecord.ESLName;
+                        // 教師一
+                        ws_total.Cells[totalAwardsCount + 2, 8].Value = courseRecord.ESLTeachers.Count > 0 ? courseRecord.ESLTeachers.Find(t => t.Sequence ==1).TeacherName : "";
+                        // 教師二
+                        ws_total.Cells[totalAwardsCount + 2, 9].Value = courseRecord.ESLTeachers.Count > 1 ? courseRecord.ESLTeachers.Find(t => t.Sequence == 2).TeacherName : "";
+                        // 教師三
+                        ws_total.Cells[totalAwardsCount + 2, 10].Value = courseRecord.ESLTeachers.Count > 2 ? courseRecord.ESLTeachers.Find(t => t.Sequence == 3).TeacherName : "";
+
+                        // 穎驊注解，另外 在樣板中 還有 Level 、 Group ， 目前 2019/1/3 系統中沒有這兩個欄位，
+                        // 目前預計是等 寒假，在補齊課程欄位
+
+
+                        totalAwardsCount++;
+                    }
+                }
+
+                //把多餘的右半邊CELL欄位 砍掉 (總表)          
+                ws_total.Cells.ClearRange(1, semesterScoreCol + 1, totalAwardsCount + 2, 50);
+                ws_total.AutoFitColumns();
+                ws_total.FirstVisibleColumn = 0;// 將打開的介面 調到最左， 要不然就會看到 右邊一片空白。
+            }
+
+        }
+
+    }
+}
+
+
+
