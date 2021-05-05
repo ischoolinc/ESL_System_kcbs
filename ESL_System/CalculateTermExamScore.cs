@@ -871,22 +871,19 @@ namespace ESL_System
             // 計算Term成績後，現在將各自加權後的成績除以各自的的總權重
             foreach (KeyValuePair<string, ESLScore> score in _termScoreDict)
             {
-                // 各課程  自己的 四捨五入 精度 小數位
-                int _decimalPlace = _scoreDecimalPlaceDict[score.Value.RefCourseID];
-
                 // 一般的 term 成績
                 if (!score.Key.Contains("定期") && !score.Key.Contains("平時"))
                 {
                     string ratioTotalTermKey = score.Value.RefCourseID + "_" + score.Value.RefStudentID + "_" + score.Value.Term;
 
-                    _termScoreDict[score.Key].Score = Math.Round(_termScoreDict[score.Key].Score / (_scoreRatioTotalDict[ratioTotalTermKey]), _decimalPlace, MidpointRounding.AwayFromZero);
+                    _termScoreDict[score.Key].Score =_termScoreDict[score.Key].Score / (_scoreRatioTotalDict[ratioTotalTermKey]);
                 }
                 // 定期的term 成績
                 if (score.Key.Contains("定期"))
                 {
                     string ratioTotalTermKey = score.Value.RefCourseID + "_" + score.Value.RefStudentID + "_" + score.Value.Term + "_定期";
 
-                    _termScoreDict[score.Key].Score = Math.Round(_termScoreDict[score.Key].Score / (_scoreRatioTotalDict[ratioTotalTermKey]), _decimalPlace, MidpointRounding.AwayFromZero);
+                    _termScoreDict[score.Key].Score =_termScoreDict[score.Key].Score / (_scoreRatioTotalDict[ratioTotalTermKey]);
                 }
             }
 
@@ -917,6 +914,30 @@ namespace ESL_System
                     }
                 }
             }
+
+            // 計算Term成績後，現在將各自加權後的成績除以各自的的總權重
+            foreach (KeyValuePair<string, ESLScore> score in _termScoreDict)
+            {
+                // 各課程  自己的 四捨五入 精度 小數位
+                int _decimalPlace = _scoreDecimalPlaceDict[score.Value.RefCourseID];
+
+                // 一般的 term 成績
+                if (!score.Key.Contains("定期") && !score.Key.Contains("平時"))
+                {
+                    string ratioTotalTermKey = score.Value.RefCourseID + "_" + score.Value.RefStudentID + "_" + score.Value.Term;
+
+                    _termScoreDict[score.Key].Score = Math.Round(_termScoreDict[score.Key].Score, _decimalPlace, MidpointRounding.AwayFromZero);
+                }
+                // 定期的term 成績
+                if (score.Key.Contains("定期"))
+                {
+                    string ratioTotalTermKey = score.Value.RefCourseID + "_" + score.Value.RefStudentID + "_" + score.Value.Term + "_定期";
+
+                    _termScoreDict[score.Key].Score = Math.Round(_termScoreDict[score.Key].Score, _decimalPlace, MidpointRounding.AwayFromZero);
+                }
+            }
+
+
 
             // 計算Subject成績後，現在將各自加權後的成績除以各自的的總權重
             foreach (KeyValuePair<string, ESLScore> score in _subjectScoreDict)
